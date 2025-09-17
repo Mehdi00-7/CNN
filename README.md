@@ -1,13 +1,13 @@
   
 The curves for the evolution of loss and for the evolution of training and test accuracies:
 
-![][image1.png]
+![](image1.png)
 
 **Diagram shows the evolution of Train and Test losses** 
 
 \*The model shows good learning with minimal overfitting, as both train and test loss steadily decrease and stabilise at around 100 epochs when the loss gets to its lowest value.
 
-![][image2.png]
+![](image2.png)
 
 **Diagram shows the evolution of Train and Test Accuracies** 
 
