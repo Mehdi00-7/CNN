@@ -1,45 +1,80 @@
-  
-The curves for the evolution of loss and for the evolution of training and test accuracies:
+# CNN Model for Image Classification
 
-![](image1.png)
+## Introduction
 
-**Diagram shows the evolution of Train and Test losses** 
+This project implements a convolutional neural network (CNN) for image classification, achieving strong generalization and high accuracy. The model is designed with modular blocks and several training enhancements to optimize performance and prevent overfitting.
 
-\*The model shows good learning with minimal overfitting, as both train and test loss steadily decrease and stabilise at around 100 epochs when the loss gets to its lowest value.
+## Results
 
-![](image2.png)
+The following plots show the evolution of loss and accuracy during training:
 
-**Diagram shows the evolution of Train and Test Accuracies** 
+![Loss Curve](image1.png)
+_Diagram: Evolution of Train and Test Losses_
 
-\*The model achieves strong generalization, with training accuracy steadily rising and test accuracy plateauing around 90% without overfitting
+- Both train and test loss decrease and stabilize around 100 epochs, indicating good learning with minimal overfitting.
 
-The model that I trained had different parts and parameters that could be changed to get a better performance and higher precision,i will start by briefing the architecture of the model :  
-Stem as the first layer of the network which applies a 3\*3 convolution over the 3 input channels (RGB)for an image and outputs 32 feature map.I then used ReLU as an activation function to introduce non linearity.
+![Accuracy Curve](image2.png)
+_Diagram: Evolution of Train and Test Accuracies_
 
-Each backbone block in the model has two parts: an expert branch and a convolutional branch. The expert branch uses adaptive average pooling followed by two fully connected layers to create a set of k  weights. The first FC layer reduces the input size by a factor of r, and the second expands it to size k. After applying softmax, these weights decide how much each of the k convolutional paths should contribute. The convolutional branch has k parallel 3×3 conv layers (each with batch norm), and their outputs are combined using the weights from the expert branch. Basically, k controls how many paths the model can choose from, and r controls how much the feature info is compressed before making that choice.After the conv branch output is calculated, the model adds it to a skip connection (Identity or a 1×1 Conv) then applies a ReLU just like the residual block we learnt in ResNet
+- Training accuracy rises steadily, and test accuracy plateaus around 90% without overfitting.
 
-These are the values of k and r i used for my different blocks:  
-I started by small values of k and r then increased them later on as the features become more   complex giving the model more paths to choose from. block1 \=\>(input=32, output=64, k=4, r=8)  
-block2 \=\>(input=64, output=128, k=6, r=4)  
-block3 \=\>(input=128, output=256, k=6, r=4)  
-block4 \=\>(input=256, output=512, k=6, r=4)
+## Model Architecture
 
-Finally the classifier ,starts with a global average pooling as was given to us in the diagram,then mlp of 3 fully connected layers with relu and dropout and final output of size 10 for the 10 different classes.
+- **Stem:**
 
-The hyperparameters i used are:
+  - 3×3 convolution over 3 input channels (RGB), outputting 32 feature maps.
+  - ReLU activation for non-linearity.
 
-| Hyperparameter | Value | Explanation |
-| ----- | ----- | ----- |
-| Initial learning rate | 0.001 | For stable and fast training,standard for Adam,tried 0.1 but 0.01 works better |
-| Weight Decay | 0.0005 | Added it to prevent overfitting by regularising the weights |
-| Optimizer | Adam | Better than SGM for adapting the learning rate in this specific model as i tried both |
-| LR scheduler | Cosine Annealing | Improved convergence and reduces LR smoothly after each epoch |
-| Loss Function | CrossEntropyLoss | Standard for classification,label smoothing for generalisation |
-| Batch Size | 256 | Worked well for me given the size of the dataset |
-| Epochs | 100 | Just enough time for my model to reach 90% accuracy before overfitting  |
-| k | 4 then 6,6,6 | Start with few paths then expand later |
-| r | 8 then 4,4,4 | Compress early then less in deep layers |
+- **Backbone Blocks:**
 
-To improve model training, I used Kaiming initialization for all Conv2d and Linear layers, which is designed for ReLU activations. This helps the model start with better weight distributions.I also added Dropout to the classifier of 0.3 and 0.4 to avoid overfitting.I applied batchNorm in every conv branch to normalise activations for faster and better training.  
-For data augmentation, I used RandomHorizentalFlip and random crop in transformers to improve generalisation.
+  - Each block has two branches:
+    - **Expert Branch:**
+      - Adaptive average pooling, two fully connected layers (FC), and softmax to generate k weights.
+      - First FC reduces input by r, second expands to k.
+      - Weights determine the contribution of k convolutional paths.
+    - **Convolutional Branch:**
+      - k parallel 3×3 conv layers (with batch norm).
+      - Outputs are combined using expert branch weights.
+  - Output is added to a skip connection (identity or 1×1 conv), followed by ReLU (like ResNet residual block).
 
+- **Classifier:**
+  - Global average pooling.
+  - MLP with 3 fully connected layers, ReLU, and dropout.
+  - Final output size: 10 (for 10 classes).
+
+## Block Details
+
+| Block   | Input | Output | k   | r   |
+| ------- | ----- | ------ | --- | --- |
+| Block 1 | 32    | 64     | 4   | 8   |
+| Block 2 | 64    | 128    | 6   | 4   |
+| Block 3 | 128   | 256    | 6   | 4   |
+| Block 4 | 256   | 512    | 6   | 4   |
+
+- k: Number of parallel paths (increases in deeper layers)
+- r: Compression factor (higher in early layers)
+
+## Hyperparameters
+
+| Hyperparameter        | Value            | Explanation                                                     |
+| --------------------- | ---------------- | --------------------------------------------------------------- |
+| Initial learning rate | 0.001            | Stable and fast training (Adam); 0.01 better than 0.1           |
+| Weight Decay          | 0.0005           | Regularizes weights to prevent overfitting                      |
+| Optimizer             | Adam             | Adaptive learning rate; better than SGD for this model          |
+| LR scheduler          | Cosine Annealing | Smoothly reduces LR after each epoch                            |
+| Loss Function         | CrossEntropyLoss | Standard for classification; label smoothing for generalization |
+| Batch Size            | 256              | Suitable for dataset size                                       |
+| Epochs                | 100              | Sufficient for model to reach 90% accuracy                      |
+| k                     | 4, 6, 6, 6       | Fewer paths early, more in deeper layers                        |
+| r                     | 8, 4, 4, 4       | More compression early, less in deeper layers                   |
+
+## Training Techniques
+
+- **Weight Initialization:** Kaiming initialization for Conv2d and Linear layers (optimized for ReLU).
+- **Dropout:** 0.3 and 0.4 in classifier to prevent overfitting.
+- **Batch Normalization:** Applied in every conv branch for faster, more stable training.
+- **Data Augmentation:** RandomHorizontalFlip and random crop (via torchvision transforms) to improve generalization.
+
+---
+
+For more details, see the code and comments in the repository.
